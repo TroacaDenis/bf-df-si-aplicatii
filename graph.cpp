@@ -4,23 +4,29 @@
 #include <queue>
 #include <stack>
 #include <algorithm>
+#include <utility>
+#include <queue>
+#include <climits>
 using namespace std;
-ifstream fin("biconex.in");
-ofstream fout("biconex.out");
+ifstream fin("bellmanford.in");
+ofstream fout("bellmanford.out");
 
 class Graph
 {
     int n;                          //nr de noduri
     int m;                          //nr de muchii
     vector<vector<int> > neighbors; //vector ce contine cate un vector cu vecini pt fiecare nod
+    vector<vector<int> > weights;   //vector ce contine cate un vector cu costurile pana la vecinii fiecarui nod
     bool oriented;                  // variabiabila pt a verifca daca e orientat
     bool from1;                     // variabila pt a verifica daca nodurile sunt numerotate de la 1
 public:
     //constructori:
+    Graph(int);
     Graph(int, bool, bool);
     Graph(int, int, bool, bool);
 
-    void insert_edge(int, int); //functie pt a insera muchii
+    void insert_edge(int, int);        //functie pt a insera muchii
+    void insert_weight(int, int, int); //functie pt a insera costuri
 
     vector<int> bfs(int); //functie pt a afla distantele minime de la un nod la celelate
 
@@ -38,11 +44,24 @@ public:
 
     bool havel_hakimi(vector<int> &); //functie ce verifica daca poate exista un graf cu gradele primite ca parametru
 
-    vector<vector<int> > critical_connections();                                                            //functie ce returneaza un vector cu muchii critice                                                  //functie pt a afla nr de componente biconexe
+    vector<vector<int> > critical_connections();                                                            //functie ce returneaza un vector cu muchii critice
     void cconnections_dfs(int, int &, vector<int> &, vector<int> &, vector<int> &, vector<vector<int> > &); //functie pt parcurgerea in adancime
+
+    void disjoint(queue< pair<int, pair<int, int> > >); //functie ce primeste mai multe operatii si numere asupra carora se aplica si afiseaza raspunsurile operatiilor de tip 2
+    int disjoint_root(int, vector<int> &);      //functie ce returneaza radacina arborelui din care face parte nodul si uneste cu radacina toate nodurile parcurse pana la aceasta
+
+    vector<int> apm(int &); //functie ce returneaza un vector cu parintii fiecarui nod din arborele partial de cost minim al grafului si costul total al muchiilor acestuia(transmis ca parametru)
+
+    vector<int> dijkstra(); //functie ce returneaza un vector cu lungimile drumurilor de la primul nod la toate celelalte
+
+    vector<int> bellman_ford(); //functie ce returneaza un vector cu lungimile drumurilor de la primul nod la toate celelalte sau un vector fara elemente daca avem ciclu negativ
+
 };
 
-Graph::Graph(int n, bool oriented = false, bool from1 = false)
+Graph::Graph(int n){
+    this->n = n;
+}
+Graph::Graph(int n, bool oriented, bool from1)
 {
     this->n = n;
     m = 0;
@@ -52,9 +71,10 @@ Graph::Graph(int n, bool oriented = false, bool from1 = false)
     {
         vector<int> aux;
         neighbors.push_back(aux);
+        weights.push_back(aux);
     }
 }
-Graph::Graph(int n, int m, bool oriented = false, bool from1 = false)
+Graph::Graph(int n, int m, bool oriented, bool from1)
 {
     this->n = n;
     this->m = m;
@@ -64,6 +84,7 @@ Graph::Graph(int n, int m, bool oriented = false, bool from1 = false)
     {
         vector<int> aux;
         neighbors.push_back(aux);
+        weights.push_back(aux);
     }
 }
 
@@ -80,6 +101,21 @@ void Graph::insert_edge(int x, int y)
         neighbors[x].push_back(y);
         if (!oriented)
             neighbors[y].push_back(x);
+    }
+}
+void Graph::insert_weight(int x, int y, int z)
+{
+    if (from1)
+    {
+        weights[x - 1].push_back(z);
+        if (!oriented)
+            weights[y - 1].push_back(z);
+    }
+    else
+    {
+        weights[x].push_back(z);
+        if (!oriented)
+            weights[y].push_back(z);
     }
 }
 
@@ -380,12 +416,210 @@ void Graph::cconnections_dfs(int x, int &disc_time, vector<int> &disc, vector<in
     }
 }
 
+void Graph::disjoint(queue< pair<int, pair<int, int> > > q)
+{
+    vector<int> parents; //vector cu parintii fiecarui nod in arborii din padurile de multimi
+    vector<int> heights; //vector cu inaltimile arborilor(facem height[radacina] pt a afla inaltimea)
+
+    for (int i = 0; i <= n; i++)
+    {
+        parents.push_back(-1);
+        heights.push_back(1);
+    }
+
+    while (!q.empty())
+    {
+        int op_type, x, y, root_x, root_y;
+        op_type = q.front().first;
+        x = q.front().second.first;
+        y = q.front().second.second;
+        q.pop();
+        //aflam radacinile celor 2 noduri:
+        root_x = disjoint_root(x, parents);
+        root_y = disjoint_root(y, parents);
+
+        if (op_type == 1)
+        {
+            //unim arborele cu inaltimea mai mica de cel cu inaltime mai mare:
+            if (heights[root_x] > heights[root_y])
+                parents[root_y] = root_x;
+            else
+            {
+                parents[root_x] = root_y;
+                //daca arborii au aceeasi inaltime, trebuie sa modificam inaltimea unuia dintre ei:
+                if (heights[root_x] == heights[root_y])
+                    heights[root_y]++;
+            }
+        }
+        else
+        {
+            //daca radacinile arborilor din care fac parte 2 noduri sunt identice, nodurile fac parte din acelasi arbore:
+            if (root_x == root_y)
+                fout<<"DA"<<'\n';
+            else
+                fout<<"NU"<<'\n';
+        }
+    }
+}
+int Graph::disjoint_root(int x, vector<int> &parents)
+{
+    int root_node = x;
+    while (parents[root_node] != -1)
+        root_node = parents[root_node];
+
+    while (parents[x] != -1)
+    {
+        int aux = parents[x];
+        parents[x] = root_node;
+        x = aux;
+    }
+    return root_node;
+}
+
+vector<int> Graph::apm(int &total_weight)
+{
+    vector<int> keys;                                                                      //vector cu costurile minime de la arborele curent la fiecare nod
+    vector<int> parents;                                                                   //vector cu parintii nodurilor din apm
+    vector<bool> visited;                                                                  //vector care verifica daca un nod a fost adaugat in apm
+    priority_queue<pair<int, int>, vector<pair<int, int> >, greater<pair<int, int> > > pq; //priority queue de minim ce memoreaza cheia unui nod si nodul
+    total_weight = 0;                                                                      //costul total al apm-ului
+    for (int i = 0; i < n; i++)
+    {
+        keys.push_back(INT_MAX); //setam costurile minime ca fiind infinit
+        parents.push_back(-1);
+        visited.push_back(false);
+    }
+    //adaugam primul nod in coada:
+    keys[0] = 0;
+    pq.push(make_pair(keys[0], 0));
+
+    //cat timp avem elemente in coada, le stergem pana gasim nodul de cost minim care nu a fost vizitat:
+    while (!pq.empty())
+    {
+        int current_node = pq.top().second;
+        int current_key = pq.top().first;
+        pq.pop();
+        if (!visited[current_node])
+        {
+            //cand gasim un nod, il trecem ca vizitat si mdoificam cheia si parintele nodurilor vecine cu acesta:
+            visited[current_node] = true;
+            total_weight += current_key;
+            for (int i = 0; i < neighbors[current_node].size(); i++)
+            {
+                //daca vecinul nu a fost adaugat deja in apm si distanta de la nod la el e mai mica decat cheia lui, il modificam si il punem in coada:
+                if (!visited[neighbors[current_node][i]] && weights[current_node][i] < keys[neighbors[current_node][i]])
+                {
+                    keys[neighbors[current_node][i]] = weights[current_node][i];
+                    parents[neighbors[current_node][i]] = current_node;
+                    pq.push(make_pair(keys[neighbors[current_node][i]], neighbors[current_node][i]));
+                }
+            }
+        }
+    }
+    return parents;
+}
+
+vector<int> Graph::dijkstra()
+{
+    vector<int> distances;                                                                 //vector cu distantele minime de la primul nod la celelalte
+    vector<bool> visited;                                                                  //vector care verifica daca un nod a fost adaugat in apm
+    priority_queue<pair<int, int>, vector<pair<int, int> >, greater<pair<int, int> > > pq; //priority queue de minim ce memoreaza distanta pana la un nod si nodul
+
+    for (int i = 0; i < n; i++)
+    {
+        distances.push_back(INT_MAX); //setam distantele minime ca fiind infinit
+        visited.push_back(false);
+    }
+    //adaugam primul nod in coada:
+    distances[0] = 0;
+    pq.push(make_pair(distances[0], 0));
+
+    //cat timp avem elemente in coada, le stergem pana gasim nodul de distanta minima care nu a fost vizitat:
+    while (!pq.empty())
+    {
+        int current_node = pq.top().second;
+        pq.pop();
+        if (!visited[current_node])
+        {
+            //cand gasim un nod, il trecem ca vizitat si mdoificam distantele pana la nodurile vecine cu acesta:
+            visited[current_node] = true;
+            for (int i = 0; i < neighbors[current_node].size(); i++)
+            {
+                //daca suma dintre distanta pana la nod si lungimea drumului de la nod la vecin este mai mica decat distanta pana la vecin, ii modificam distanta si il punem in coada:
+                if (!visited[neighbors[current_node][i]] && (distances[current_node] + weights[current_node][i]) < distances[neighbors[current_node][i]])
+                {
+                    distances[neighbors[current_node][i]] = distances[current_node] + weights[current_node][i];
+                    pq.push(make_pair(distances[neighbors[current_node][i]], neighbors[current_node][i]));
+                }
+            }
+        }
+    }
+    for (int i = 0; i < distances.size(); i++)
+        if (distances[i] == INT_MAX)
+            distances[i] = 0;
+    return distances;
+}
+
+vector<int> Graph::bellman_ford()
+{
+    queue<int> q;                 //coada cu nodurile ale caror costuri au fost modificate
+    vector<int> costs;            //vector cu costurile minime de la primul nod la celelalte
+    vector<bool> in_queue;        //vector care verifica daca un nod se afla in coada
+    vector<int> in_queue_counter; //vector care numara de cate ori a fost adaugat un nod in coada
+    bool negative_cycle = false;  //variabila ce verifica daca avem un ciclu de cost negativ
+
+    for (int i = 0; i < n; i++)
+    {
+        costs.push_back(INT_MAX); //setam costurile minime ca fiind infinit
+        in_queue.push_back(false);
+        in_queue_counter.push_back(0);
+    }
+    //adaugam primul nod in coada:
+    costs[0] = 0;
+    q.push(0);
+    in_queue[0] = true;
+    in_queue_counter[0]++;
+
+    //cat timp avem elemente in coada si nu avem ciclu de cost negativ, modificam costurile vecinilor primului nod din coada si il stergem:
+    while (!q.empty() && !negative_cycle)
+    {
+        int current_node = q.front();
+        q.pop();
+        in_queue[current_node] = false;
+        for (int i = 0; i < neighbors[current_node].size(); i++)
+        {
+            //daca suma dintre costul nodului si costul muchiei de la nod la vecin e mai mare decat costul vecinului, il modificam:
+            if (costs[current_node] + weights[current_node][i] < costs[neighbors[current_node][i]])
+            {
+                costs[neighbors[current_node][i]] = costs[current_node] + weights[current_node][i];
+                //daca vecinul nu este deja in coada, il adaugam:
+                if (!in_queue[neighbors[current_node][i]])
+                {
+                    //avem doar n-1 etape, deci un nod du poate sa fie introdus in coada de mai multe ori decat daca avem ciclu infinit:
+                    //o etapa = modificare veciniilor tuturor nodurilor din coada care au fost modificate in acelasi timp
+                    if (in_queue_counter[neighbors[current_node][i]] >= n)
+                        negative_cycle = true;
+                    else
+                    {
+                        q.push(neighbors[current_node][i]);
+                        in_queue[neighbors[current_node][i]] = true;
+                        in_queue_counter[neighbors[current_node][i]]++;
+                    }
+                }
+            }
+        }
+    }
+    if (negative_cycle)
+        costs.clear();
+    return costs;
+}
+
 class Solution
 {
 public:
     vector<vector<int> > criticalConnections(int n, vector<vector<int> > &connections)
     {
-        Graph g(n);
+        Graph g(n, false, false);
         for (int i = 0; i < n; i++)
         {
             g.insert_edge(connections[i][0], connections[i][1]);
@@ -398,21 +632,21 @@ public:
 
 int main()
 {
-    int n, m, a, b;
+    int n, m, x, y, z;
     fin >> n >> m;
-    Graph g(n, m, false, true);
+    Graph g(n, m, true, true);
     for (int i = 0; i < m; i++)
     {
-        fin >> a >> b;
-        g.insert_edge(a, b);
+        fin >> x >> y >> z;
+        g.insert_edge(x, y);
+        g.insert_weight(x, y, z);
     }
-    vector<vector<int> > aux;
-    aux = g.biconnected_comp();
-    fout << aux.size() << '\n';
-    for (int i = 0; i < aux.size(); i++)
-    {
-        for (int j = 0; j < aux[i].size(); j++)
-            fout << aux[i][j] + 1 << " ";
-        fout << '\n';
+    vector<int> aux;
+    aux = g.bellman_ford();
+    if(aux.empty())
+        fout<<"Ciclu negativ!";
+    else{
+        for (int i = 1; i < aux.size(); i++)
+            fout << aux[i] << " ";
     }
 }
