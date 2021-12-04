@@ -56,6 +56,8 @@ public:
 
     vector<int> bellman_ford(); //functie ce returneaza un vector cu lungimile drumurilor de la primul nod la toate celelalte sau un vector fara elemente daca avem ciclu negativ
 
+    int max_flow(int, int);
+    bool max_flow_bfs(int**, int, int, vector<int>&);
 };
 
 Graph::Graph(int n){
@@ -614,6 +616,58 @@ vector<int> Graph::bellman_ford()
     return costs;
 }
 
+bool Graph :: max_flow_bfs(int **residual_graph, int s, int d, vector<int> &parents){
+    queue<int> q;
+    vector<bool> visited(n,false);
+    q.push(s);
+    visited[s] = true;
+
+    while(!q.empty()){
+        for(int i = 0; i < n; i++){
+            if(residual_graph[q.front()][i] && !visited[i]){
+                q.push(i);
+                visited[i] = true;
+                parents[i] = q.front();
+                if(i == d)
+                    return true;
+            }
+        }
+        q.pop();
+    }
+    return false;
+}
+int Graph :: max_flow(int s, int d){
+    if(from1){
+        s--;
+        d--;
+    }
+    vector<int> parents(n,-1);
+    int maximum_flow = 0;
+    int **residual_graph;
+    residual_graph = new int *[n];
+    for(int i = 0; i < n; i++)
+        residual_graph[i] = new int [n]();
+    for(int i = 0; i < n; i++)
+        for(int j = 0; j < neighbors[i].size(); j++) 
+            residual_graph[i][ neighbors[i][j] ] = weights[i][j];
+    
+    while(max_flow_bfs(residual_graph, s, d, parents)){
+        int current_flow = INT_MAX;
+        for(int i = d; i > s; i = parents[i])
+            current_flow = min(current_flow, residual_graph[ parents[i] ][i]);
+
+        for(int i = d; i > s; i = parents[i]){
+            residual_graph[ parents[i] ][i] -=  current_flow;
+            residual_graph[i][ parents[i] ] += current_flow;
+        }
+
+        maximum_flow += current_flow;
+    }
+
+    return maximum_flow;
+}
+
+
 class Solution
 {
 public:
@@ -641,12 +695,6 @@ int main()
         g.insert_edge(x, y);
         g.insert_weight(x, y, z);
     }
-    vector<int> aux;
-    aux = g.bellman_ford();
-    if(aux.empty())
-        fout<<"Ciclu negativ!";
-    else{
-        for (int i = 1; i < aux.size(); i++)
-            fout << aux[i] << " ";
-    }
+    fout<<g.max_flow(1, n);
+    
 }
