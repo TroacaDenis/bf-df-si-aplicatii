@@ -8,8 +8,8 @@
 #include <queue>
 #include <climits>
 using namespace std;
-ifstream fin("bellmanford.in");
-ofstream fout("bellmanford.out");
+ifstream fin("maxflow.in");
+ofstream fout("maxflow.out");
 
 class Graph
 {
@@ -47,8 +47,8 @@ public:
     vector<vector<int> > critical_connections();                                                            //functie ce returneaza un vector cu muchii critice
     void cconnections_dfs(int, int &, vector<int> &, vector<int> &, vector<int> &, vector<vector<int> > &); //functie pt parcurgerea in adancime
 
-    void disjoint(queue< pair<int, pair<int, int> > >); //functie ce primeste mai multe operatii si numere asupra carora se aplica si afiseaza raspunsurile operatiilor de tip 2
-    int disjoint_root(int, vector<int> &);      //functie ce returneaza radacina arborelui din care face parte nodul si uneste cu radacina toate nodurile parcurse pana la aceasta
+    void disjoint(queue<pair<int, pair<int, int> > >); //functie ce primeste mai multe operatii si numere asupra carora se aplica si afiseaza raspunsurile operatiilor de tip 2
+    int disjoint_root(int, vector<int> &);             //functie ce returneaza radacina arborelui din care face parte nodul si uneste cu radacina toate nodurile parcurse pana la aceasta
 
     vector<int> apm(int &); //functie ce returneaza un vector cu parintii fiecarui nod din arborele partial de cost minim al grafului si costul total al muchiilor acestuia(transmis ca parametru)
 
@@ -57,10 +57,16 @@ public:
     vector<int> bellman_ford(); //functie ce returneaza un vector cu lungimile drumurilor de la primul nod la toate celelalte sau un vector fara elemente daca avem ciclu negativ
 
     int max_flow(int, int);
-    bool max_flow_bfs(int**, int, int, vector<int>&);
+    bool max_flow_bfs(int **, int, int, vector<int> &, queue<int> &);
+
+    vector<vector<int> > roy_floyd();
+
+    int darb();
+    int darb_bfs(int &);
 };
 
-Graph::Graph(int n){
+Graph::Graph(int n)
+{
     this->n = n;
 }
 Graph::Graph(int n, bool oriented, bool from1)
@@ -418,7 +424,7 @@ void Graph::cconnections_dfs(int x, int &disc_time, vector<int> &disc, vector<in
     }
 }
 
-void Graph::disjoint(queue< pair<int, pair<int, int> > > q)
+void Graph::disjoint(queue<pair<int, pair<int, int> > > q)
 {
     vector<int> parents; //vector cu parintii fiecarui nod in arborii din padurile de multimi
     vector<int> heights; //vector cu inaltimile arborilor(facem height[radacina] pt a afla inaltimea)
@@ -457,9 +463,9 @@ void Graph::disjoint(queue< pair<int, pair<int, int> > > q)
         {
             //daca radacinile arborilor din care fac parte 2 noduri sunt identice, nodurile fac parte din acelasi arbore:
             if (root_x == root_y)
-                fout<<"DA"<<'\n';
+                fout << "DA" << '\n';
             else
-                fout<<"NU"<<'\n';
+                fout << "NU" << '\n';
         }
     }
 }
@@ -616,57 +622,131 @@ vector<int> Graph::bellman_ford()
     return costs;
 }
 
-bool Graph :: max_flow_bfs(int **residual_graph, int s, int d, vector<int> &parents){
-    queue<int> q;
-    vector<bool> visited(n,false);
-    q.push(s);
-    visited[s] = true;
-
-    while(!q.empty()){
-        for(int i = 0; i < n; i++){
-            if(residual_graph[q.front()][i] && !visited[i]){
-                q.push(i);
-                visited[i] = true;
-                parents[i] = q.front();
-                if(i == d)
-                    return true;
-            }
-        }
-        q.pop();
-    }
-    return false;
-}
-int Graph :: max_flow(int s, int d){
-    if(from1){
+int Graph ::max_flow(int s, int d)
+{
+    if (from1)
+    {
         s--;
         d--;
     }
-    vector<int> parents(n,-1);
+    vector<int> parents(n, -1);
+    queue<int> sink_neighbors;
     int maximum_flow = 0;
     int **residual_graph;
     residual_graph = new int *[n];
-    for(int i = 0; i < n; i++)
-        residual_graph[i] = new int [n]();
-    for(int i = 0; i < n; i++)
-        for(int j = 0; j < neighbors[i].size(); j++) 
-            residual_graph[i][ neighbors[i][j] ] = weights[i][j];
-    
-    while(max_flow_bfs(residual_graph, s, d, parents)){
-        int current_flow = INT_MAX;
-        for(int i = d; i > s; i = parents[i])
-            current_flow = min(current_flow, residual_graph[ parents[i] ][i]);
+    for (int i = 0; i < n; i++)
+        residual_graph[i] = new int[n]();
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < neighbors[i].size(); j++)
+            residual_graph[i][neighbors[i][j]] = weights[i][j];
 
-        for(int i = d; i > s; i = parents[i]){
-            residual_graph[ parents[i] ][i] -=  current_flow;
-            residual_graph[i][ parents[i] ] += current_flow;
+    while (max_flow_bfs(residual_graph, s, d, parents, sink_neighbors))
+    {
+        while (!sink_neighbors.empty())
+        {
+            parents[d] = sink_neighbors.front();
+            sink_neighbors.pop();
+            int current_flow = INT_MAX;
+            for (int i = d; i > s; i = parents[i])
+                current_flow = min(current_flow, residual_graph[parents[i]][i]);
+
+            for (int i = d; i > s; i = parents[i])
+            {
+                residual_graph[parents[i]][i] -= current_flow;
+                residual_graph[i][parents[i]] += current_flow;
+            }
+
+            maximum_flow += current_flow;
         }
-
-        maximum_flow += current_flow;
     }
 
     return maximum_flow;
 }
+bool Graph ::max_flow_bfs(int **residual_graph, int s, int d, vector<int> &parents, queue<int> &sink_neighbors)
+{
+    queue<int> q;
+    vector<bool> visited(n, false);
+    q.push(s);
+    visited[s] = true;
 
+    while (!q.empty())
+    {
+        for (int i = 0; i < n; i++)
+        {
+            if (residual_graph[q.front()][i] && !visited[i])
+            {
+                if (i == d)
+                    sink_neighbors.push(q.front());
+                else{
+                    q.push(i);
+                    visited[i] = true;
+                    parents[i] = q.front();
+                }
+                
+            }
+        }
+        q.pop();
+        
+    }
+    return !sink_neighbors.empty();
+}
+
+vector<vector<int> > Graph::roy_floyd()
+{
+    vector<vector<int> > dist;
+    for (int i = 0; i < n; i++)
+    {
+        vector<int> aux;
+        for (int j = 0; j < n; j++)
+        {
+            if (weights[i][j] != 0 || i == j)
+                aux.push_back(weights[i][j]);
+            else
+                aux.push_back(INT_MAX);
+        }
+        dist.push_back(aux);
+    }
+
+    for (int k = 0; k < n; k++)
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                if (dist[i][k] != INT_MAX && dist[k][j] != INT_MAX && dist[i][k] + dist[k][j] < dist[i][j])
+                    dist[i][j] = dist[i][k] + dist[k][j];
+    return dist;
+}
+
+int Graph::darb()
+{
+    int diametru;
+    int x = 0;
+    diametru = darb_bfs(x);
+    diametru = darb_bfs(x);
+    return diametru;
+}
+int Graph::darb_bfs(int &x)
+{
+    vector<int> dist;
+    queue<int> aux;
+    for (int i = 0; i < n; i++)
+        dist.push_back(-1);
+    aux.push(x);
+    dist[x] = 1;
+    while (!aux.empty())
+    {
+        for (int i = 0; i < neighbors[aux.front()].size(); i++)
+        {
+            if (dist[neighbors[aux.front()][i]] == -1)
+            {
+                dist[neighbors[aux.front()][i]] = dist[aux.front()] + 1;
+                aux.push(neighbors[aux.front()][i]);
+            }
+        }
+
+        x = aux.front();
+        aux.pop();
+    }
+    return dist[x];
+}
 
 class Solution
 {
@@ -696,5 +776,4 @@ int main()
         g.insert_weight(x, y, z);
     }
     fout<<g.max_flow(1, n);
-    
 }
