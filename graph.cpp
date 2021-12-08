@@ -56,13 +56,13 @@ public:
 
     vector<int> bellman_ford(); //functie ce returneaza un vector cu lungimile drumurilor de la primul nod la toate celelalte sau un vector fara elemente daca avem ciclu negativ
 
-    int max_flow(int, int);
-    bool max_flow_bfs(int **, int, int, vector<int> &, queue<int> &);
+    int max_flow(int, int);                                           //functie ce primeste ca parametrii sursa si destinatia si returneaza fluxul maxim al retelei
+    bool max_flow_bfs(int **, int, int, vector<int> &, queue<int> &); //functie pentru a parcurge graful residual
 
-    vector<vector<int> > roy_floyd();
+    vector<vector<int> > roy_floyd(); //functie care returneaza matricea distantelor minime dintre 2 noduri
 
-    int darb();
-    int darb_bfs(int &);
+    int darb();          //functie de returneaza diametrul unui arbore
+    int darb_bfs(int &); //functie pentru parcurgere in adancime ce returneaza distanta panaa la ultimul nod si il salveaza pe acesta in variabila data ca parametru
 };
 
 Graph::Graph(int n)
@@ -629,33 +629,39 @@ int Graph ::max_flow(int s, int d)
         s--;
         d--;
     }
-    vector<int> parents(n, -1);
-    queue<int> sink_neighbors;
-    int maximum_flow = 0;
-    int **residual_graph;
+    vector<int> parents(n, -1); //vector cu parintii fiecarui nod in bfs-ul grafului residual
+    queue<int> sink_neighbors;  //coada care pastreaza frunzele legate de destinatie printr-o muchie nesaturata
+    int maximum_flow = 0;       //variabila ce memoreaza fluxul maxim
+    int **residual_graph;       //graf residual
     residual_graph = new int *[n];
     for (int i = 0; i < n; i++)
         residual_graph[i] = new int[n]();
+    //muchiile grafului resiudal au la inceput capacitatiile muchiilor grafului initial, iar muchiile inverse au capacitatea 0:
     for (int i = 0; i < n; i++)
         for (int j = 0; j < neighbors[i].size(); j++)
             residual_graph[i][neighbors[i][j]] = weights[i][j];
 
+    //cat timp se poate ajunge de la sursa la destinatie in arborele residual:
     while (max_flow_bfs(residual_graph, s, d, parents, sink_neighbors))
     {
+        //pentru fiecare nod din care se ajunge la radacina printr-o muchie nesaturata, vizitam nodurile de la destinatie la sursa:
         while (!sink_neighbors.empty())
         {
             parents[d] = sink_neighbors.front();
             sink_neighbors.pop();
-            int current_flow = INT_MAX;
+            int current_flow = INT_MAX; //fluxul ce poate fi transmis de la sursa la destinatie prin nodurile parinte din bfs
+
+            //fluxul curent este egal cu capacitatea minima a muchiilor parcurse din graful residual:
             for (int i = d; i > s; i = parents[i])
                 current_flow = min(current_flow, residual_graph[parents[i]][i]);
 
+            //micsoram fluxul muchiilor vizitate si il marim pe ce al inverselor:
             for (int i = d; i > s; i = parents[i])
             {
                 residual_graph[parents[i]][i] -= current_flow;
                 residual_graph[i][parents[i]] += current_flow;
             }
-
+            //adaugam fluxul curent la cel total:
             maximum_flow += current_flow;
         }
     }
@@ -675,25 +681,27 @@ bool Graph ::max_flow_bfs(int **residual_graph, int s, int d, vector<int> &paren
         {
             if (residual_graph[q.front()][i] && !visited[i])
             {
+                //daca nodul curent este ndoul destinatie, nu il adaugam in bfs si ii adaugam parintele in coada vecinilor destinatiei:
                 if (i == d)
                     sink_neighbors.push(q.front());
-                else{
+                else
+                {
                     q.push(i);
                     visited[i] = true;
                     parents[i] = q.front();
                 }
-                
             }
         }
         q.pop();
-        
     }
+    //cand sink_neighbors nu are niciun element, inseamna ca nu see poate ajunge de la sursa la destinatie
     return !sink_neighbors.empty();
 }
 
 vector<vector<int> > Graph::roy_floyd()
 {
-    vector<vector<int> > dist;
+    vector<vector<int> > dist; //matrice cu distantele
+    //initial distantele sunt egale cu costurile muchiilor din graf sau cu infinit daaca 2 noduri nu sunt legate prin o singura muchie:
     for (int i = 0; i < n; i++)
     {
         vector<int> aux;
@@ -707,6 +715,7 @@ vector<vector<int> > Graph::roy_floyd()
         dist.push_back(aux);
     }
 
+    //pt fiecare nod k, daca este nod intermediar intre alte 2 noduri i si j, incercam sa modificam distanta de la i la j:
     for (int k = 0; k < n; k++)
         for (int i = 0; i < n; i++)
             for (int j = 0; j < n; j++)
@@ -719,7 +728,9 @@ int Graph::darb()
 {
     int diametru;
     int x = 0;
+    //facem bfs din primul nod, iar x o sa primeasca valoarea ultimului nod vizitat:
     diametru = darb_bfs(x);
+    //facem bfs din ultimul nod vizitat, iar diametrul o sa fie egal cu distanta de la acesta la ultimul nod din noul bfs:
     diametru = darb_bfs(x);
     return diametru;
 }
@@ -775,5 +786,5 @@ int main()
         g.insert_edge(x, y);
         g.insert_weight(x, y, z);
     }
-    fout<<g.max_flow(1, n);
+    fout << g.max_flow(1, n);
 }
