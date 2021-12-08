@@ -475,6 +475,7 @@ int Graph::disjoint_root(int x, vector<int> &parents)
     while (parents[root_node] != -1)
         root_node = parents[root_node];
 
+    //toate nodurile dintre x si radacina primesc drept parinte pe radacina, pt a face gasirea radacinii unui nod mai rapida:
     while (parents[x] != -1)
     {
         int aux = parents[x];
@@ -509,7 +510,7 @@ vector<int> Graph::apm(int &total_weight)
         pq.pop();
         if (!visited[current_node])
         {
-            //cand gasim un nod, il trecem ca vizitat si mdoificam cheia si parintele nodurilor vecine cu acesta:
+            //cand gasim un nod, il trecem ca vizitat si modificam cheia si parintele nodurilor vecine cu acesta:
             visited[current_node] = true;
             total_weight += current_key;
             for (int i = 0; i < neighbors[current_node].size(); i++)
@@ -603,8 +604,8 @@ vector<int> Graph::bellman_ford()
                 //daca vecinul nu este deja in coada, il adaugam:
                 if (!in_queue[neighbors[current_node][i]])
                 {
-                    //avem doar n-1 etape, deci un nod du poate sa fie introdus in coada de mai multe ori decat daca avem ciclu infinit:
-                    //o etapa = modificare veciniilor tuturor nodurilor din coada care au fost modificate in acelasi timp
+                    //avem doar n-1 etape, deci un nod nu poate sa fie introdus in coada de mai multe ori decat daca avem ciclu infinit:
+                    //o etapa = modificarea veciniilor tuturor nodurilor din coada care au fost modificate in acelasi timp
                     if (in_queue_counter[neighbors[current_node][i]] >= n)
                         negative_cycle = true;
                     else
