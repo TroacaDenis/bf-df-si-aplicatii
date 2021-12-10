@@ -1,1 +1,13 @@
-# bf-df-si-aplicatii
+# Link-uri infoarena:
+-BFS - Parcurgere in latime: https://www.infoarena.ro/job_detail/2795793?action=view-source
+-Parcurgere DFS - componente conexe: https://www.infoarena.ro/job_detail/2795795?action=view-source
+-Componente biconexe: https://www.infoarena.ro/job_detail/2797184?action=view-source
+-Componente tare conexe: https://www.infoarena.ro/job_detail/2796199?action=view-source
+-Critical Connections(leetcode): https://leetcode.com/submissions/detail/584451710/
+-Sortare topologica: https://www.infoarena.ro/job_detail/2796306?action=view-source
+-Arbore partial de cost minim: https://www.infoarena.ro/job_detail/2803356?action=view-source
+-Algoritmul lui Dijkstra: https://www.infoarena.ro/job_detail/2805672?action=view-source
+-Algoritmul Bellman-Ford: https://www.infoarena.ro/job_detail/2806075?action=view-source
+-Flux maxim: https://www.infoarena.ro/job_detail/2814157?action=view-source
+-Diametrul unui arbore: https://www.infoarena.ro/job_detail/2814039?action=view-source
+-Floyd-Warshall/Roy-Floyd: https://www.infoarena.ro/job_detail/2813762?action=view-source
