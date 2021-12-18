@@ -550,7 +550,7 @@ vector<int> Graph::dijkstra()
         pq.pop();
         if (!visited[current_node])
         {
-            //cand gasim un nod, il trecem ca vizitat si mdoificam distantele pana la nodurile vecine cu acesta:
+            //cand gasim un nod, il trecem ca vizitat si modificam distantele pana la nodurile vecine cu acesta:
             visited[current_node] = true;
             for (int i = 0; i < neighbors[current_node].size(); i++)
             {
@@ -682,7 +682,7 @@ bool Graph ::max_flow_bfs(int **residual_graph, int s, int d, vector<int> &paren
         {
             if (residual_graph[q.front()][i] && !visited[i])
             {
-                //daca nodul curent este ndoul destinatie, nu il adaugam in bfs si ii adaugam parintele in coada vecinilor destinatiei:
+                //daca nodul curent este nodul destinatie, nu il adaugam in bfs si ii adaugam parintele in coada vecinilor destinatiei:
                 if (i == d)
                     sink_neighbors.push(q.front());
                 else
