@@ -9,8 +9,8 @@
 #include <climits>
 #include <map>
 using namespace std;
-ifstream fin("cuplaj.in");
-ofstream fout("cuplaj.out");
+ifstream fin("dfs.in");
+ofstream fout("dfs.out");
  
 class Graph
 {
@@ -937,18 +937,13 @@ public:
  
 int main()
 {
-    int l, r, m, x, y;
-    fin >> l >> r >> m;
-    Graph g(l, m, true, true);
+    int n, m, a, b;
+    fin >> n >> m;
+    Graph g(n, m, false, true);
     for (int i = 0; i < m; i++)
     {
-        fin >> x >> y;
-        g.insert_edge(x, y);
+        fin >> a >> b;
+        g.insert_edge(a, b);
     }
-    int nr = 0;
-    vector<int> aux = g.max_matching(l, r, nr);
-    fout<<nr<<'\n';
-    for(int i = 1; i <= l; i++)
-        if(aux[i] != 0)
-            fout<<i<<" "<<aux[i]<<'\n';
+    fout << g.connected_comp();
 }
