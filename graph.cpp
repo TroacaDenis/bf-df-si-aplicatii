@@ -646,7 +646,7 @@ int Graph ::max_flow(int s, int d)
     residual_graph = new int *[n];
     for (int i = 0; i < n; i++)
         residual_graph[i] = new int[n]();
-    //muchiile grafului resiudal au la inceput capacitatiile muchiilor grafului initial, iar muchiile inverse au capacitatea 0:
+    //muchiile grafului residual au la inceput capacitatiile muchiilor grafului initial, iar muchiile inverse au capacitatea 0:
     for (int i = 0; i < n; i++)
         for (int j = 0; j < neighbors[i].size(); j++)
             residual_graph[i][neighbors[i][j]] = weights[i][j];
@@ -711,7 +711,7 @@ bool Graph ::max_flow_bfs(int **residual_graph, int s, int d, vector<int> &paren
 vector<vector<int> > Graph::roy_floyd()
 {
     vector<vector<int> > dist; //matrice cu distantele
-    //initial distantele sunt egale cu costurile muchiilor din graf sau cu infinit daaca 2 noduri nu sunt legate prin o singura muchie:
+    //initial distantele sunt egale cu costurile muchiilor din graf sau cu infinit daca 2 noduri nu sunt legate prin o singura muchie:
     for (int i = 0; i < n; i++)
     {
         vector<int> aux;
