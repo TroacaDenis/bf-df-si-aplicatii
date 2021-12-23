@@ -7,10 +7,11 @@
 #include <utility>
 #include <queue>
 #include <climits>
+#include <map>
 using namespace std;
-ifstream fin("maxflow.in");
-ofstream fout("maxflow.out");
-
+ifstream fin("cuplaj.in");
+ofstream fout("cuplaj.out");
+ 
 class Graph
 {
     int n;                          //nr de noduri
@@ -24,47 +25,55 @@ public:
     Graph(int);
     Graph(int, bool, bool);
     Graph(int, int, bool, bool);
-
+ 
     void insert_edge(int, int);        //functie pt a insera muchii
     void insert_weight(int, int, int); //functie pt a insera costuri
-
+ 
     vector<int> bfs(int); //functie pt a afla distantele minime de la un nod la celelate
-
+ 
     int connected_comp();          //functie pt a afla nr de componente conexe
     void dfs(int, vector<bool> &); //functie pt parcurgerea in adancime a unei componente
-
+ 
     vector<vector<int> > biconnected_comp();                                                                             //functie pt a afla nr de componente biconexe
     void biconnected_dfs(int, int &, vector<int> &, vector<int> &, stack<int> &, vector<vector<int> > &, vector<int> &); //functie pt parcurgerea in adancime
-
+ 
     vector<vector<int> > stronglyconnected_comp();                                                                              //functie pt a afla nr de componente tare conexe
     void stronglyconnected_dfs(int, int &, vector<int> &, vector<int> &, stack<int> &, vector<vector<int> > &, vector<bool> &); //functie pt parcurgerea in adancime
-
+ 
     vector<int> topological_sort();                          //functie ce returneaza un vector cu nodurile sortate topologic
     void topological_dfs(int, vector<bool> &, stack<int> &); //functie pt parcurgere in adancime a nodurilor
-
+ 
     bool havel_hakimi(vector<int> &); //functie ce verifica daca poate exista un graf cu gradele primite ca parametru
-
+ 
     vector<vector<int> > critical_connections();                                                            //functie ce returneaza un vector cu muchii critice
     void cconnections_dfs(int, int &, vector<int> &, vector<int> &, vector<int> &, vector<vector<int> > &); //functie pt parcurgerea in adancime
-
+ 
     void disjoint(queue<pair<int, pair<int, int> > >); //functie ce primeste mai multe operatii si numere asupra carora se aplica si afiseaza raspunsurile operatiilor de tip 2
     int disjoint_root(int, vector<int> &);             //functie ce returneaza radacina arborelui din care face parte nodul si uneste cu radacina toate nodurile parcurse pana la aceasta
-
+ 
     vector<int> apm(int &); //functie ce returneaza un vector cu parintii fiecarui nod din arborele partial de cost minim al grafului si costul total al muchiilor acestuia(transmis ca parametru)
-
+ 
     vector<int> dijkstra(); //functie ce returneaza un vector cu lungimile drumurilor de la primul nod la toate celelalte
-
+ 
     vector<int> bellman_ford(); //functie ce returneaza un vector cu lungimile drumurilor de la primul nod la toate celelalte sau un vector fara elemente daca avem ciclu negativ
-
+ 
     int max_flow(int, int);                                           //functie ce primeste ca parametrii sursa si destinatia si returneaza fluxul maxim al retelei
     bool max_flow_bfs(int **, int, int, vector<int> &, queue<int> &); //functie pentru a parcurge graful residual
-
+ 
     vector<vector<int> > roy_floyd(); //functie care returneaza matricea distantelor minime dintre 2 noduri
-
+ 
     int darb();          //functie de returneaza diametrul unui arbore
     int darb_bfs(int &); //functie pentru parcurgere in adancime ce returneaza distanta panaa la ultimul nod si il salveaza pe acesta in variabila data ca parametru
-};
+ 
+    vector<int> eulerian_circuit(); //functie ce returneaza un vector cu nodurile parcurse in ciclul Eulerian
+ 
+    int hamiltonian_cycle(); //functie ce returneaza costul minim al unui ciclu hamiltonian
 
+    vector<int>max_matching(int, int, int &); //functie ce returneaza un vector cu perechiile nodurilor din partea stanga a cuplajului maxim si numarul de muchii al acestuia ca parametru
+    bool matching_bfs(int, int, vector<int> &, vector<int> &, vector<int> &); //functie ce verifica daca mai exista un drum augmentativ 
+    bool matching_dfs(int, int, vector<int> &, vector<int> &, vector<int> &, int); //functie ce verifica daca putem avea drum augmentativ ce incepe cu nodul transmis ca parametru
+};
+ 
 Graph::Graph(int n)
 {
     this->n = n;
@@ -95,7 +104,7 @@ Graph::Graph(int n, int m, bool oriented, bool from1)
         weights.push_back(aux);
     }
 }
-
+ 
 void Graph::insert_edge(int x, int y)
 {
     if (from1)
@@ -126,7 +135,7 @@ void Graph::insert_weight(int x, int y, int z)
             weights[y].push_back(z);
     }
 }
-
+ 
 vector<int> Graph::bfs(int x)
 {
     vector<int> dist; //vector pt a memora distantele
@@ -156,7 +165,7 @@ vector<int> Graph::bfs(int x)
     }
     return dist;
 }
-
+ 
 int Graph::connected_comp()
 {
     int nr = 0;           //variabila pt a memora nr de componente conexe
@@ -181,7 +190,7 @@ void Graph::dfs(int x, vector<bool> &visited)
         if (visited[neighbors[x][i]] == false)
             dfs(neighbors[x][i], visited);
 }
-
+ 
 vector<vector<int> > Graph::biconnected_comp()
 {
     vector<int> disc;                //vector cu timpurile de descoperie ale nodurilor din dfs
@@ -190,7 +199,7 @@ vector<vector<int> > Graph::biconnected_comp()
     vector<vector<int> > components; //vector cu componentele biconexe
     int disc_time = 0;               //variabila pt a cunoaste timpul curent de descoperire
     vector<int> parents;             //vecotr cu parintii nodurilor in dfs
-
+ 
     for (int i = 0; i < n; i++)
     {
         disc.push_back(-1);
@@ -255,7 +264,7 @@ void Graph::biconnected_dfs(int x, int &disc_time, vector<int> &disc, vector<int
             low[x] = min(low[x], disc[neighbors[x][i]]);
     }
 }
-
+ 
 vector<vector<int> > Graph::stronglyconnected_comp()
 {
     vector<int> disc;                //vector cu timpurile de descoperie ale nodurilor din dfs
@@ -264,7 +273,7 @@ vector<vector<int> > Graph::stronglyconnected_comp()
     vector<vector<int> > components; //vector cu componentele biconexe
     int disc_time = 0;               //variabila pt a cunoaste timpul curent de descoperire
     vector<bool> in_stack;           //vector care memoreaza daca nodurle sunt prezente in stiva
-
+ 
     for (int i = 0; i < n; i++)
     {
         disc.push_back(-1);
@@ -315,7 +324,7 @@ void Graph::stronglyconnected_dfs(int x, int &disc_time, vector<int> &disc, vect
         components.push_back(aux);
     }
 }
-
+ 
 vector<int> Graph::topological_sort()
 {
     vector<bool> visited; //vector care retine daca nodurile au fost vizitate
@@ -349,7 +358,7 @@ void Graph::topological_dfs(int x, vector<bool> &visited, stack<int> &nodes)
     }
     nodes.push(x);
 }
-
+ 
 bool Graph::havel_hakimi(vector<int> &degrees)
 {
     while (!degrees.empty())
@@ -372,7 +381,7 @@ bool Graph::havel_hakimi(vector<int> &degrees)
     }
     return true;
 }
-
+ 
 vector<vector<int> > Graph::critical_connections()
 {
     vector<int> disc;                  //vector cu timpurile de descoperie ale nodurilor din dfs
@@ -380,7 +389,7 @@ vector<vector<int> > Graph::critical_connections()
     vector<int> parents;               //vector cu parintii nodurile in dfs
     vector<vector<int> > cconnections; //vector cu muchii critice
     int disc_time = 0;                 //variabila pt a cunoaste timpul curent de descoperire
-
+ 
     for (int i = 0; i < n; i++)
     {
         disc.push_back(-1);
@@ -423,18 +432,18 @@ void Graph::cconnections_dfs(int x, int &disc_time, vector<int> &disc, vector<in
             low[x] = min(low[x], disc[neighbors[x][i]]);
     }
 }
-
+ 
 void Graph::disjoint(queue<pair<int, pair<int, int> > > q)
 {
     vector<int> parents; //vector cu parintii fiecarui nod in arborii din padurile de multimi
     vector<int> heights; //vector cu inaltimile arborilor(facem height[radacina] pt a afla inaltimea)
-
+ 
     for (int i = 0; i <= n; i++)
     {
         parents.push_back(-1);
         heights.push_back(1);
     }
-
+ 
     while (!q.empty())
     {
         int op_type, x, y, root_x, root_y;
@@ -445,7 +454,7 @@ void Graph::disjoint(queue<pair<int, pair<int, int> > > q)
         //aflam radacinile celor 2 noduri:
         root_x = disjoint_root(x, parents);
         root_y = disjoint_root(y, parents);
-
+ 
         if (op_type == 1)
         {
             //unim arborele cu inaltimea mai mica de cel cu inaltime mai mare:
@@ -474,7 +483,7 @@ int Graph::disjoint_root(int x, vector<int> &parents)
     int root_node = x;
     while (parents[root_node] != -1)
         root_node = parents[root_node];
-
+ 
     //toate nodurile dintre x si radacina primesc drept parinte pe radacina, pt a face gasirea radacinii unui nod mai rapida:
     while (parents[x] != -1)
     {
@@ -484,7 +493,7 @@ int Graph::disjoint_root(int x, vector<int> &parents)
     }
     return root_node;
 }
-
+ 
 vector<int> Graph::apm(int &total_weight)
 {
     vector<int> keys;                                                                      //vector cu costurile minime de la arborele curent la fiecare nod
@@ -501,7 +510,7 @@ vector<int> Graph::apm(int &total_weight)
     //adaugam primul nod in coada:
     keys[0] = 0;
     pq.push(make_pair(keys[0], 0));
-
+ 
     //cat timp avem elemente in coada, le stergem pana gasim nodul de cost minim care nu a fost vizitat:
     while (!pq.empty())
     {
@@ -527,13 +536,13 @@ vector<int> Graph::apm(int &total_weight)
     }
     return parents;
 }
-
+ 
 vector<int> Graph::dijkstra()
 {
     vector<int> distances;                                                                 //vector cu distantele minime de la primul nod la celelalte
     vector<bool> visited;                                                                  //vector care verifica daca un nod a fost adaugat in apm
     priority_queue<pair<int, int>, vector<pair<int, int> >, greater<pair<int, int> > > pq; //priority queue de minim ce memoreaza distanta pana la un nod si nodul
-
+ 
     for (int i = 0; i < n; i++)
     {
         distances.push_back(INT_MAX); //setam distantele minime ca fiind infinit
@@ -542,7 +551,7 @@ vector<int> Graph::dijkstra()
     //adaugam primul nod in coada:
     distances[0] = 0;
     pq.push(make_pair(distances[0], 0));
-
+ 
     //cat timp avem elemente in coada, le stergem pana gasim nodul de distanta minima care nu a fost vizitat:
     while (!pq.empty())
     {
@@ -568,7 +577,7 @@ vector<int> Graph::dijkstra()
             distances[i] = 0;
     return distances;
 }
-
+ 
 vector<int> Graph::bellman_ford()
 {
     queue<int> q;                 //coada cu nodurile ale caror costuri au fost modificate
@@ -576,7 +585,7 @@ vector<int> Graph::bellman_ford()
     vector<bool> in_queue;        //vector care verifica daca un nod se afla in coada
     vector<int> in_queue_counter; //vector care numara de cate ori a fost adaugat un nod in coada
     bool negative_cycle = false;  //variabila ce verifica daca avem un ciclu de cost negativ
-
+ 
     for (int i = 0; i < n; i++)
     {
         costs.push_back(INT_MAX); //setam costurile minime ca fiind infinit
@@ -588,7 +597,7 @@ vector<int> Graph::bellman_ford()
     q.push(0);
     in_queue[0] = true;
     in_queue_counter[0]++;
-
+ 
     //cat timp avem elemente in coada si nu avem ciclu de cost negativ, modificam costurile vecinilor primului nod din coada si il stergem:
     while (!q.empty() && !negative_cycle)
     {
@@ -622,7 +631,7 @@ vector<int> Graph::bellman_ford()
         costs.clear();
     return costs;
 }
-
+ 
 int Graph ::max_flow(int s, int d)
 {
     if (from1)
@@ -641,7 +650,7 @@ int Graph ::max_flow(int s, int d)
     for (int i = 0; i < n; i++)
         for (int j = 0; j < neighbors[i].size(); j++)
             residual_graph[i][neighbors[i][j]] = weights[i][j];
-
+ 
     //cat timp se poate ajunge de la sursa la destinatie in arborele residual:
     while (max_flow_bfs(residual_graph, s, d, parents, sink_neighbors))
     {
@@ -651,11 +660,11 @@ int Graph ::max_flow(int s, int d)
             parents[d] = sink_neighbors.front();
             sink_neighbors.pop();
             int current_flow = INT_MAX; //fluxul ce poate fi transmis de la sursa la destinatie prin nodurile parinte din bfs
-
+ 
             //fluxul curent este egal cu capacitatea minima a muchiilor parcurse din graful residual:
             for (int i = d; i > s; i = parents[i])
                 current_flow = min(current_flow, residual_graph[parents[i]][i]);
-
+ 
             //micsoram fluxul muchiilor vizitate si il marim pe ce al inverselor:
             for (int i = d; i > s; i = parents[i])
             {
@@ -666,7 +675,7 @@ int Graph ::max_flow(int s, int d)
             maximum_flow += current_flow;
         }
     }
-
+ 
     return maximum_flow;
 }
 bool Graph ::max_flow_bfs(int **residual_graph, int s, int d, vector<int> &parents, queue<int> &sink_neighbors)
@@ -675,7 +684,7 @@ bool Graph ::max_flow_bfs(int **residual_graph, int s, int d, vector<int> &paren
     vector<bool> visited(n, false);
     q.push(s);
     visited[s] = true;
-
+ 
     while (!q.empty())
     {
         for (int i = 0; i < n; i++)
@@ -698,7 +707,7 @@ bool Graph ::max_flow_bfs(int **residual_graph, int s, int d, vector<int> &paren
     //cand sink_neighbors nu are niciun element, inseamna ca nu see poate ajunge de la sursa la destinatie
     return !sink_neighbors.empty();
 }
-
+ 
 vector<vector<int> > Graph::roy_floyd()
 {
     vector<vector<int> > dist; //matrice cu distantele
@@ -715,7 +724,7 @@ vector<vector<int> > Graph::roy_floyd()
         }
         dist.push_back(aux);
     }
-
+ 
     //pt fiecare nod k, daca este nod intermediar intre alte 2 noduri i si j, incercam sa modificam distanta de la i la j:
     for (int k = 0; k < n; k++)
         for (int i = 0; i < n; i++)
@@ -724,7 +733,7 @@ vector<vector<int> > Graph::roy_floyd()
                     dist[i][j] = dist[i][k] + dist[k][j];
     return dist;
 }
-
+ 
 int Graph::darb()
 {
     int diametru;
@@ -753,11 +762,161 @@ int Graph::darb_bfs(int &x)
                 aux.push(neighbors[aux.front()][i]);
             }
         }
-
+ 
         x = aux.front();
         aux.pop();
     }
     return dist[x];
+}
+ 
+vector<int> Graph::eulerian_circuit(){
+    stack<int> nodes; //stiva ce retine nodurile din ciclul format
+    vector<int> sol; //vector cu nodurile din ciclul eulerian
+    vector<vector<int> > remaining_edges(n); //vector cu vectori ce retin ce muchii pornesc dintr-un nod
+    int edge_nr = 0; //variabila folosita pentru a cunoaste ce muchie trebuie adaugata in remaining_edges
+    vector<pair<int, int> > edge_nodes; //vector ce retine capetele unei muchii
+    vector<bool> visited(m, false); //vector ce verifica daca o muchie a fost vizitata
+
+    for(int i = 0; i < n; i++)
+        for(int j = 0; j < neighbors[i].size(); j++){
+            remaining_edges[i].push_back(edge_nr);
+            remaining_edges[ neighbors[i][j] ].push_back(edge_nr);
+            edge_nodes.push_back(make_pair(i, neighbors[i][j]));
+            edge_nr++;
+        }
+    //verificam daca nu putem avea ciclu eulerian:
+    for(int i = 0; i < n; i++)
+        if(neighbors[i].size()%2 != 0)
+            return sol;
+
+    nodes.push(0);
+    while(!nodes.empty()){
+        int current_node = nodes.top();
+        //alegem o muchie care pleaca din nod si nu a fost vizitata inca:
+        if(!remaining_edges[current_node].empty()){
+            int current_edge = remaining_edges[current_node].back();
+            //stergem muchia aleasa:
+            remaining_edges[current_node].pop_back();
+            if(!visited[current_edge]){
+                //marcam muchia ca vizitata si adaugam nodul la care duce in stiva, fara a il elimina pe cel precedent:
+                visited[current_edge] = true;
+                int next_node;
+                if(current_node == edge_nodes[current_edge].first)
+                    next_node = edge_nodes[current_edge].second;
+                else
+                    next_node = edge_nodes[current_edge].first;
+                nodes.push(next_node);
+            }
+        }
+        else{
+            //dupa ce am vizitat toate muchiile care pleaca din nod, il stergem din stiva si il adaugam la solutie
+            nodes.pop();
+            sol.push_back(current_node);
+        }
+    }
+    //nu mai trebuie sa afisam muchia cu care ne intoarcem la nodul din care am plecat, deci stergem un nod:
+    sol.pop_back();
+    return sol;
+    
+}
+ 
+int Graph::hamiltonian_cycle(){
+    int C[1<<n][n]; //matrice cu costurile minime C[i][j] ale lanturilor ce incep de la nodul 0 si se termina cu nodul j
+                    //lanturile folosesc doar noduri egale cu pozitiile in care apare 1 in reprezentarea binara a lui i
+    for(int i = 0; i < 1<<n; i++)
+        for(int j = 0; j < n; j++)
+            C[i][j] = 100000000; //setam costurile ca fiind infinit
+    C[1][0] = 0;
+
+    for(int i = 0; i < 1<<n; i++)
+        for(int j = 0; j < n; j++)
+            //daca pe pozitia j din reprezentarea binara a lui i avem 1:
+            if(i & (1<<j))
+                //verficam daca lantul curent poate folosi nodurile vecine cu j:
+                for(int k = 0; k < neighbors[j].size(); k++)
+                    if(i & (1<<neighbors[j][k]))
+                        //costul minim al vecinului este minimul dintre el si costul minim al lantului care se termina cu j si nu il foloseste pe vecin + costul muchiei de la j la vecin:
+                        C[i][ neighbors[j][k] ] = min(C[i][ neighbors[j][k] ], C[i ^ (1<<neighbors[j][k])][j] + weights[j][k]);
+    
+    int sol = 100000000;
+    //pentru toate nodurile verificam daca se poate ajunge la nodul 0 printr-o muchie:
+    for(int i = 1; i < n; i++)
+        for(int j = 0; j < neighbors[i].size(); j++)
+            if (neighbors[i][j] == 0)
+                //costul minim este minimul dintre el si costul minim al lantului ce contine toate nodurile si se termina in nodul i + costul muchiei de la i la 0:
+                sol = min(sol, C[(1<<n)-1][i] + weights[i][j]);
+
+    return sol;
+}
+
+vector<int> Graph::max_matching(int nr_left, int nr_right, int &nr){
+    //vom avea noduri de la 1 la nr_left in partea stanga si de la 1 la nr_right in partea dreapta
+    //folosim si nodul 0 care este initial conectat la toate nodurile din stanga si din dreapta
+    //daca gasim un drum alternant care pleaca din 0 si ajunge tot in acesta, atunci avem drum augmentativ
+    vector<int> right_match(nr_left + 1, 0); //vector cu perechile din stanga ale nodurilor din dreapta
+    vector<int> left_match(nr_right + 1, 0); //vector cu perechile din stanga ale nodurilor din dreapta
+    vector<int> dist(nr_left + 1, 0); //vector ce ne ajuta sa verificam daca nodurile fac parte din cuplaj si sa parcurgem un drum augmentativ
+
+    nr = 0;
+    //cat timp avem drumuri augmentative:
+    while(matching_bfs(nr_left, nr_right, right_match, left_match, dist)){
+        //verificam din ce noduri avem drumuri augmentative:
+        for(int i = 1; i <= nr_left; i++)
+            if(right_match[i] == 0 && matching_dfs(nr_left, nr_right, right_match, left_match, dist, i))
+                nr++;
+    }
+    return right_match;
+}
+bool Graph::matching_bfs(int nr_left, int nr_right, vector<int> &right_match, vector<int> &left_match, vector<int> &dist){
+    queue<int> q; //coada cu nodurile libere din stanga(noduri ce nu fac parte din cuplaj)
+    for(int i = 1; i <= nr_left; i++){
+        //daca un nod este liber distanta e 0, altfel e infinit
+        if(right_match[i] == 0){
+            dist[i] = 0;
+            q.push(i);
+        }
+        else
+            dist[i] = INT_MAX;
+    }
+    dist[0] = INT_MAX;
+
+    while(!q.empty()){
+        int left_node = q.front();
+        q.pop();
+        if(left_node != 0 && dist[left_node] < INT_MAX){
+            //pentru fiecare vecin posibil din dreapta al nodului verificam daca perechea lui din stanga face parte din cuplaj (sau este nodul 0):
+            for(int i = 0; i < neighbors[left_node - 1].size(); i++){
+                int righ_node = neighbors[left_node - 1][i] + 1;
+                if(dist[ left_match[righ_node] ] == INT_MAX){
+                    //de la nodul left_node pana la nodul left_match[right_node] avem o muchie care nu face parte din cupal si una care face parte
+                    //deci putem sa adaugam nodul left_match[right_node] in q pentru ca dupa el urmeaza o muchie care nu face parte din cuplaj
+                    dist[ left_match[righ_node] ] = dist[left_node] + 1;
+                    q.push(left_match[righ_node]);
+                }
+            }
+        }
+    }
+    //daca nu avem drum alternant care sa ajunga in 0, atungi nu avem drum augmentativ:
+    return (dist[0] != INT_MAX);
+}
+bool Graph::matching_dfs(int nr_left, int nr_right, vector<int> &right_match, vector<int> &left_match, vector<int> &dist, int left_node){
+    if(left_node != 0){
+        //urmam drumul augmentativ setat de bfs prin vectorul dist:
+        for(int i = 0; i < neighbors[left_node - 1].size(); i++){
+            int righ_node = neighbors[left_node - 1][i] + 1;
+            if(dist[ left_match[righ_node] ] == dist[left_node] + 1){
+                if(matching_dfs(nr_left, nr_right, right_match, left_match, dist, left_match[righ_node])){
+                    left_match[righ_node] = left_node;
+                    right_match[left_node] = righ_node;
+                    return true;
+                }
+            }
+        }
+        dist[left_node] = INT_MAX;
+        return false;
+    }
+    //cand ajungem in nodul 0, inseamna ca avem drum augmentativ
+    return true;
 }
 
 class Solution
@@ -775,17 +934,21 @@ public:
         return aux;
     }
 };
-
+ 
 int main()
 {
-    int n, m, x, y, z;
-    fin >> n >> m;
-    Graph g(n, m, true, true);
+    int l, r, m, x, y;
+    fin >> l >> r >> m;
+    Graph g(l, m, true, true);
     for (int i = 0; i < m; i++)
     {
-        fin >> x >> y >> z;
+        fin >> x >> y;
         g.insert_edge(x, y);
-        g.insert_weight(x, y, z);
     }
-    fout << g.max_flow(1, n);
+    int nr = 0;
+    vector<int> aux = g.max_matching(l, r, nr);
+    fout<<nr<<'\n';
+    for(int i = 1; i <= l; i++)
+        if(aux[i] != 0)
+            fout<<i<<" "<<aux[i]<<'\n';
 }
