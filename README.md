@@ -11,3 +11,6 @@
 -Flux maxim: https://www.infoarena.ro/job_detail/2814157?action=view-source <br />
 -Diametrul unui arbore: https://www.infoarena.ro/job_detail/2814039?action=view-source <br />
 -Floyd-Warshall/Roy-Floyd: https://www.infoarena.ro/job_detail/2813762?action=view-source <br />
+-Cuplaj maxim in graf bipartit: https://www.infoarena.ro/job_detail/2821888?action=view-source <br />
+-Ciclu Eulerian: https://www.infoarena.ro/job_detail/2821316?action=view-source <br />
+-Ciclu hamiltonian de cost minim: https://www.infoarena.ro/job_detail/2820701?action=view-source <br />
